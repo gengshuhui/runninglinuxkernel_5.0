@@ -210,17 +210,19 @@ BASEINCLUDE ?= /lib/modules/$(shell uname -r)/build
 
 编译内核模块，下面以最简单的hello_world内核模块程序为例。
 ```
-root@ubuntu:/mnt/hello_world# make
-make -C /lib/modules/5.0.0+/build M=/mnt/hello_world modules;
+cd /mnt/rlk_lab/rlk_basic/chapter_1_quick_start/lab3_hello_world
+
+benshushu:lab3_hello_world# make
+make -C /lib/modules/`uname -r`/build M=/mnt/rlk_lab/rlk_basic/chapter_1_quick_start/lab3_hello_world modules;
 make[1]: Entering directory '/usr/src/linux'
-  CC [M]  /mnt/hello_world/test-1.o
-  LD [M]  /mnt/hello_world/test.o
+  CC [M]  /mnt/rlk_lab/rlk_basic/chapter_1_quick_start/lab3_hello_world/hello_world.o
+  LD [M]  /mnt/rlk_lab/rlk_basic/chapter_1_quick_start/lab3_hello_world/hello-world.o
   Building modules, stage 2.
   MODPOST 1 modules
-  CC      /mnt/hello_world/test.mod.o
-  LD [M]  /mnt/hello_world /test.ko
+  CC      /mnt/rlk_lab/rlk_basic/chapter_1_quick_start/lab3_hello_world/hello-world.mod.o
+  LD [M]  /mnt/rlk_lab/rlk_basic/chapter_1_quick_start/lab3_hello_world/hello-world.ko
 make[1]: Leaving directory '/usr/src/linux'
-root@ubuntu: /mnt/hello_world#
+benshushu:lab3_hello_world# 
 ```
 
 加载内核模块。
@@ -235,11 +237,11 @@ livepatch的支持。aarch64-linux-gnu-gcc版本必须是8或者以上。
 
 在内核源码根目录下samples/livepatch/目录中有相关用例，在ubuntu主机里编译相关模块
 ```
-$ export ARCH=arm64
-$ export CROSS_COMPILE=aarch64-linux-gnu-
+cd samples/livepatch/
 
-$ cd samples/livepatch/
-$ make CONFIG_SAMPLE_LIVEPATCH=m -C ../../ M=$(pwd) modules
+export ARCH=arm64
+export CROSS_COMPILE=aarch64-linux-gnu-
+make -C ../../ CONFIG_SAMPLE_LIVEPATCH=m M=$(pwd) modules
 ```
 2. 启动内核
 ```
@@ -247,31 +249,36 @@ $ ./run_debian_arm64.sh run
 ```
 将相关热补丁模块拷贝到共享目录
 ```
-$ cp samples/livepatch/*.ko  kmodules/
+$ samples/livepatch$ cp *.ko ../../kmodules/
 ```
 3. 进入系统, 执行cat命令.
 ```
 benshushu:mnt# cat /proc/cmdline 
-noinintrd sched_debug root=/dev/vda rootfstype=ext4 rw crashkernel=256M loglevel=8
+noinitrd nokaslr loglevel=8 sched_debug root=/dev/vda rootfstype=ext4 rw crashkernel=256M vfio.dyndbg=+pflmt irq_gic_v3_its.dyndbg=+pflmt iommu.dyndbg=+pflmt irqdomain.dyndbg=+pflmt
 ```
 
 加载热补丁模块后再次执行该命令:
 
 ```
-benshushu:mnt# cat /proc/cmdline
-this has been live patched
+benshushu:mnt# insmod livepatch-sample.ko 
+[19167.037384] livepatch: enabling patch 'livepatch_sample'
+[19167.101558] livepatch: 'livepatch_sample': starting patching transition
+[19168.115278] livepatch: 'livepatch_sample': patching complete
 ```
 
 可以看到内核函数cmdline_proc_show被替换成功。
 
 卸载热补丁模块
 ```
-benshushu:mnt# echo 0 > /sys/kernel/livepatch/livepatch_sample/enabled
-[  702.928721] livepatch: 'livepatch_sample': starting unpatching transition
-benshushu:mnt# [  704.373970] livepatch: 'livepatch_sample': unpatching complete
+benshushu:mnt# cat /sys/kernel/livepatch/livepatch_sample/enabled
+benshushu:mnt# echo 0 > /sys/kernel/livepatch/livepatch_sample/enabled                      o': ec
+[19238.213987] livepatch: 'livepatch_sample': starting unpatching transition
+[19239.179167] livepatch: 'livepatch_sample': unpatching complete
 
-benshushu:mnt# cat /proc/cmdline
-noinintrd sched_debug root=/dev/vda rootfstype=ext4 rw crashkernel=256M loglevel=8
+benshushu:mnt# cat /proc/cmdline 
+noinitrd nokaslr loglevel=8 sched_debug root=/dev/vda rootfstype=ext4 rw crashkernel=256M vfio.dyndbg=+pflmt irq_gic_v3_its.dyndbg=+pflmt iommu.dyndbg=+pflmt irqdomain.dyndbg=+pflmt
+
+benshushu:mnt# rmmod livepatch_sample 
 ```
 
 可以看到热补丁模块卸载后，cmdline_proc_show函数恢复到补丁前状态。
