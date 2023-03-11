@@ -24,6 +24,7 @@ static int __init my_test_init(void)
 
 static void __exit my_test_exit(void)
 {
+	printk("module parameter mytest=%d, debug=%d\n", mytest, debug);
 	printk("goodbye\n");
 }
 

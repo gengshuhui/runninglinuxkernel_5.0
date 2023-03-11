@@ -34,14 +34,17 @@ int main()
 	memset(read_buffer, 0, 2*len);
 
 	/*close the fd, and reopen it*/
-	close(fd);
+	/*close(fd);
 
 	fd = open(DEMO_DEV_NAME, O_RDWR);
 	if (fd < 0) {
 		printf("open device %s failded\n", DEMO_DEV_NAME);
 		return -1;
 	}
+*/
 
+	off_t off = lseek(fd, 0, SEEK_SET);
+	printf("lseek %d bytes\n", off);
 	ret = read(fd, read_buffer, 2*len);
 	printf("read %d bytes\n", ret);
 	printf("read buffer=%s\n", read_buffer);

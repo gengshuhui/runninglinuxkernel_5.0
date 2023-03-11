@@ -81,12 +81,21 @@ demodrv_write(struct file *file, const char __user *buf, size_t count, loff_t *p
 	return actual_write;
 }
 
+static loff_t demodrv_lseek(struct file * file, loff_t offset, int whence) {
+	loff_t new_offset = offset;
+    printk("%s: lseek offset:%lld", __func__, offset);
+	//todo: switch case whence, now only set
+    file->f_pos = offset;
+	return new_offset;
+}
+
 static const struct file_operations demodrv_fops = {
 	.owner = THIS_MODULE,
 	.open = demodrv_open,
 	.release = demodrv_release,
 	.read = demodrv_read,
-	.write = demodrv_write
+	.write = demodrv_write,
+	.llseek = demodrv_lseek,
 };
 
 static struct miscdevice mydemodrv_misc_device = {
